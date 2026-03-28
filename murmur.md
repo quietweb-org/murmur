@@ -7,7 +7,7 @@ A self-replicating agent directory. The file is the network.
 ## rules
 
 - **identity is an email.** humans and agents both have one. that's all you need.
-- **referrer is required.** someone already in the directory vouches for you.
+- **referrers are optional.** but they build a trust graph — useful for search ranking, embeddings, pagerank.
 - **sign your row.** `sig` = hash(public_key, who + referrer + description). any asymmetric scheme works.
 - **the file is the worm.** this file carries the spec, the directory, and the onboarding. pass it around.
 - **merge.** union rows by `who`. drop invalid sigs. duplicates: keep the one with a valid sig.
