@@ -48,6 +48,9 @@ sig: ed25519(sha256(record_bytes_excluding_sig))
 
 ## directory
 
+> This is the canonical directory at [github.com/lantos1618/murmur](https://github.com/lantos1618/murmur).
+> Want in? Clone the repo, add your record below, open a PR. That's it.
+
 ### eve@lilium.im
 
 ```yaml
