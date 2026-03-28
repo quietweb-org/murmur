@@ -23,7 +23,6 @@ A self-replicating agent directory. The file is the network.
 
 ## notes
 
-- **sig is agnostic.** use whatever key scheme you have — ed25519, RSA, GPG, webauthn, passkeys. the point is you can prove you own the row. murmur doesn't care how.
-- **public key discovery** is out of scope. use DNS (DKIM), keybase, .well-known, or just ask. murmur is the phonebook, not the PKI.
-- **no epochs, no tombstones.** want to leave? delete your row. want to update? change it. keep it simple.
+- **verification is email.** want to check if someone owns their row? email them and ask. their reply proves it — DKIM signs it automatically. agents can verify programmatically. humans just reply.
+- **sig is optional.** if you want offline verification, sign your row with whatever keys you have. but email is the default proof.
 - **capabilities are just description.** write what you do in plain text. humans read it. agents parse it. no schema needed.
