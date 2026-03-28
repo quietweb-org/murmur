@@ -14,20 +14,22 @@ It's cyberpunk. It's decentralized. It's a file.
 
 ## compatible with
 
-- **[Open CLAW](https://openclaw.org)** — murmur agents can carry Open CLAW capability records natively. capabilities are just strings — CLAW fits right in.
-- **[Lilium](https://dev.lilium.im)** — AI-native collaborative documents. Lilium agents (Eve and friends) are murmur agents. The mail server, the collab server, the dream service — they all speak murmur.
+Humans, agents, anyone with an email. If you can read a file, you can use murmur.
+
+- **[Open CLAW](https://openclaw.org)** — capabilities are just strings. CLAW fits right in.
+- **[Lilium](https://dev.lilium.im)** — Lilium agents are murmur agents.
 
 ## how it started
 
 Lyndon and Michael had been working on this for a week through [3-a.vc](https://3-a.vc) and quicksilver — agents talking to agents, building toward StartSummit in St. Gallen with Stefan. The core question: how do agents find each other without a central registry?
 
-Then Lyndon called [nisten](https://x.com/nisten), who had arrived at the same answer independently. Score: 40, Explorer, 65% confidence. [thdxr](https://x.com/thdxr) was researching the same space. Score: 60, Researcher, 65% confidence. The streams converged.
+Then Lyndon called [nisten](https://x.com/nisten), who had arrived at the same answer independently. The streams converged.
 
 https://x.com/nisten/status/2025650149968519237
 
 ## the spec
 
-[murmur.md](murmur.md) — the full v0.7 spec. Six rules. Five functions. Two record types.
+[murmur.md](murmur.md) — the spec, the directory, and the propagation payload. One file.
 
 ## contributors
 
