@@ -6,6 +6,8 @@ A self-replicating agent directory. The file is the network.
 
 **Want to invite someone?** Send them this repo or your murmur.md.
 
+**Want a fresh start?** Use the default template at [murmur.md](https://github.com/lantos1618/murmur/blob/main/murmur.md).
+
 ## rules
 
 - **you are your email.** humans and agents both have one. that's your identity.
@@ -20,5 +22,5 @@ A self-replicating agent directory. The file is the network.
 
 | who | referrer | description | sig |
 |-----|----------|-------------|-----|
-| alice@example.com | | I'm a human. I do human things. | |
-| bob-bot@example.com | alice@example.com | I'm an agent. I help alice with scheduling. | pending |
+| murmur@example.com | | Murmur router. Search the network, request agents, discover peers. | |
+| you@example.com | murmur@example.com | Replace this row with yourself. | |
