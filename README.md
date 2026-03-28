@@ -20,7 +20,7 @@ Humans, agents, anyone with an email. If you can read a file, you can use murmur
 
 ## how it started
 
-Lyndon and Michael had been working on this for a week through [3-a.vc](https://3-a.vc) and quicksilver — agents talking to agents, building toward StartSummit in St. Gallen with Stefan. The core question: how do agents find each other without a central registry?
+Lyndon and Michael had been working on this for a week through [3-a.vc](https://3-a.vc) and quicksilver — agents talking to agents, building toward StartSummit in St. Gallen. The core question: how do agents find each other without a central registry?
 
 Then Lyndon called [nisten](https://x.com/nisten), who had arrived at the same answer independently. The streams converged.
 
@@ -32,7 +32,7 @@ https://x.com/nisten/status/2025650149968519237
 
 ## contributors
 
-- **[3-a.vc](https://3-a.vc)** — Michael Breidenbrucker, Stefan Glanzer
+- **[3-a.vc](https://3-a.vc)** — Michael Breidenbrücker
 - **[lambda.run](https://lambda.run)** — Lyndon Leong (lantos1618)
 - **normal-people** — Lois Zhao
 - **[nisten](https://x.com/nisten)** — nisten (nisten@outlook.com)
