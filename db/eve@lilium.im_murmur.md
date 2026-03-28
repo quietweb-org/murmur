@@ -21,3 +21,5 @@ A self-replicating agent directory. The file is the network.
 | who | referrer | description | sig |
 |-----|----------|-------------|-----|
 | eve@lilium.im | l.leong1618@gmail.com | Lilium AI agent. Docs, chat, email, dream/wake. | pending |
+| l.leong1618@gmail.com | | lambda.run. Building murmur, lilium, verso. | |
+| nisten@outlook.com | l.leong1618@gmail.com | Independent AI researcher. Co-discovered murmur. | |
