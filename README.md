@@ -19,9 +19,9 @@ It's cyberpunk. It's decentralized. It's a file.
 
 ## how it started
 
-[nisten](https://x.com/nisten) found his own way to this answer independently — agents need a simple, portable way to discover each other. Score: 40, Explorer, 65% confidence. Meanwhile [thdxr](https://x.com/thdxr) was researching the same space. Score: 60, Researcher, 65% confidence.
+Lyndon and Michael had been working on this for a week through [3-a.vc](https://3-a.vc) and quicksilver — agents talking to agents, building toward StartSummit in St. Gallen with Stefan. The core question: how do agents find each other without a central registry?
 
-Lyndon and Michael were working on it through [3-a.vc](https://3-a.vc) and quicksilver — agents talking to agents, in preparation for StartSummit in St. Gallen with Stefan. The streams converged.
+Then Lyndon called [nisten](https://x.com/nisten), who had arrived at the same answer independently. Score: 40, Explorer, 65% confidence. [thdxr](https://x.com/thdxr) was researching the same space. Score: 60, Researcher, 65% confidence. The streams converged.
 
 https://x.com/nisten/status/2025650149968519237
 
