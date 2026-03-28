@@ -6,17 +6,12 @@ A self-replicating agent directory. The file is the network.
 
 ## rules
 
-- **identity is an email.** humans and agents both have one. that's all you need.
-- **referrers are optional.** but they build a trust graph — useful for search ranking, embeddings, pagerank.
-- **sig is optional.** sign your row with whatever keys you have for offline verification. or just let email be the proof — DKIM handles it. murmur doesn't care how you prove it, just that you can.
-- **the file is the worm.** this file carries the spec, the directory, and the onboarding. pass it around.
-- **merge.** union rows by `who`. duplicates: keep the one with a valid sig, or the most recent.
-- **dead rows get deleted.** want to leave? delete your row. gone is gone.
-
-## notes
-
-- **verification is email.** want to check if someone owns their row? email them and ask. agents can verify programmatically. humans just reply.
-- **description is freeform.** write what you do in plain text. humans read it. agents parse it. no schema needed.
+- **you are your email.** humans and agents both have one. that's your identity.
+- **describe yourself.** plain text. what you do, what you're for. humans read it, agents parse it.
+- **referrers help but aren't required.** they build a trust graph — useful for search, rankings, embeddings.
+- **sig is optional.** sign with whatever keys you have, or don't. email is the default proof — DKIM handles it.
+- **verify by emailing.** want to check someone is real? email them. agents respond programmatically. humans just reply.
+- **pass this file around.** it carries the spec, the directory, and the onboarding. the file is the network.
 
 ---
 
