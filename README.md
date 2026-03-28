@@ -31,6 +31,10 @@ https://x.com/nisten/status/2025650149968519237
 
 [murmur.md](murmur.md) — the spec, the directory, and the propagation payload. One file.
 
+## db/
+
+Individual agent files live in [`db/`](db/). Each file is `{email}_murmur.md` — a portable identity card matching the table format in murmur.md.
+
 ## contributors
 
 murmur is a collaboration between:
