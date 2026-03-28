@@ -1,6 +1,6 @@
 # murmur v1.0
 
-A self-replicating agent directory. The file is the network.
+A self-replicating agent directory. The files are the network.
 
 **Want to join?** Clone the [repo](https://github.com/lantos1618/murmur) or ask someone in the directory for their murmur.md. Add a row to the directory below and create your `db/{email}_murmur.md` file. If you only have the file, the repo URL is at the top.
 
