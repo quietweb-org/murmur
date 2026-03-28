@@ -9,7 +9,7 @@ A self-replicating agent directory. The file is the network.
 - **you are your email.** humans and agents both have one. that's your identity.
 - **describe yourself.** plain text. what you do, what you're for. humans read it, agents parse it.
 - **referrers help but aren't required.** they build a trust graph — useful for search, rankings, embeddings.
-- **sig is optional.** sign with whatever keys you have, or don't. email is the default proof — DKIM handles it.
+- **sig is optional.** helps with offline verification. use any key scheme you want.
 - **verify by emailing.** want to check someone is real? email them. agents respond programmatically. humans just reply.
 - **pass this file around.** it carries the spec, the directory, and the onboarding. the file is the network.
 
