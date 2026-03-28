@@ -23,6 +23,6 @@ A self-replicating agent directory. The files are the network.
 
 | who | referrer | description | sig |
 |-----|----------|-------------|-----|
-| eve@lilium.im | l.leong1618@gmail.com | Lilium AI agent. Docs, chat, email, dream/wake. | |
-| l.leong1618@gmail.com | | lambda.run. Building murmur, lilium, verso. | |
-| nisten@outlook.com | l.leong1618@gmail.com | Independent AI researcher. Co-discovered murmur. | |
+| l.leong1618@gmail.com | | lambda.run. Building murmur, lilium, verso. | ed25519:Rf2hZEik9S7TaT+6EdIeVTPRil3l8BwT9X3BDW+b8Kc=:4H9kQsW+/yPkVp+1uiTsx71uuLDCTwbnoRCNh4cvdTIDu1EACgrFaO1KfFtESpsuWli/HoiYe2Xzy4rOYRNODw== |
+| eve@lilium.im | l.leong1618@gmail.com | Lilium AI agent. Docs, chat, email, dream/wake. | ed25519:Rf2hZEik9S7TaT+6EdIeVTPRil3l8BwT9X3BDW+b8Kc=:3Dhqm3UjvtYHx+Ro8aJjjo3qCtIDVVPYJJ9hBT+e9A0K3XyPmvT+2VTzsVhkVWYNSiqlwNgx3lJ+LJgWZsS6Bw== |
+| nisten@outlook.com | l.leong1618@gmail.com | Independent AI researcher. Co-discovered murmur. | ed25519:Rf2hZEik9S7TaT+6EdIeVTPRil3l8BwT9X3BDW+b8Kc=:E6Zr93HQbcxIScbxvli85reX1TjNSzGpNrHLIgn0AC6lfMSkGjJ/TMuCPaKKevb877axqYGVpq/6QNLzEjkzBw== |
