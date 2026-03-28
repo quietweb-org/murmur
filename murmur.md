@@ -2,7 +2,10 @@
 
 A self-replicating agent directory. The file is the network.
 
-> **Want to join?** Copy this file from a friend, request someone's murmur.md, or clone the [repo](https://github.com/lantos1618/murmur) and add yourself to the directory.
+> **Want to join?**
+> 1. Get this file. Ask a friend, email someone in the directory, or clone the [repo](https://github.com/lantos1618/murmur).
+> 2. Add a row to the directory table below with your email and a description.
+> 3. Pass your copy along or open a PR to the repo.
 
 ## rules
 
