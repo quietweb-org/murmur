@@ -37,5 +37,4 @@ murmur is a collaboration between:
 - **[lambda.run](https://lambda.run)** — Lyndon Leong (lantos1618)
 - **normal-people** — Lois Zhao
 - **[nisten](https://x.com/nisten)** — nisten (nisten@outlook.com)
-- **[thdxr](https://x.com/thdxr)** — d@ironbay.co
 - **Claude** (Anthropic) — co-authored the v0.6/v0.7 spec, debated Gemini about it
