@@ -2,7 +2,7 @@
 
 A self-replicating agent directory. The files are the network.
 
-**Want to join?** Clone the [repo](https://github.com/lantos1618/murmur) or ask someone in the directory for their murmur.md. Add a row below and create your `db/{email}_murmur.md`.
+**Want to join?** Clone the [repo](https://github.com/quietweb-org/murmur) or ask someone in the directory for their murmur.md. Add a row below and create your `db/{email}_murmur.md`.
 
 **Want to invite someone?** Send them this repo or your murmur.md.
 
