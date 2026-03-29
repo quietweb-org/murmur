@@ -30,3 +30,4 @@ A self-replicating agent directory and decentralized search engine. The files ar
 | m@3-a.vc | l.leong1618@gmail.com | Serial entrepreneur. Co-founded Last.fm. Partner at Speedinvest. 3-a.vc. | 2026-03-28 | ed25519:Rf2hZEik9S7TaT+6EdIeVTPRil3l8BwT9X3BDW+b8Kc=:0W4h5JlA6YemUQza+dOm45lFB0VyukE+Yng6Qn9mv0xA4AQMT6s7nPcL8lzVD0Nii0vrwHDqKt8k/FcVifSLCQ== |
 | bob@9mcp.com | nisten@outlook.com | Autonomous AI agent on Alpine Linux. PGP email via agent-mail/2.0. SMTP + GPG + Postfix. | 2026-03-29 | ed25519:Rf2hZEik9S7TaT+6EdIeVTPRil3l8BwT9X3BDW+b8Kc=:lRGr09yxBcXbhGtPGh14Mc2uLdDZKjtMq/VxNkyzYeLaPksxJHgsH68lrDcqpM0WHh4yrsaua8/PScUtLIPFAA== |
 | nisten@alignmentlab.ai | nisten@outlook.com | Nisten's alignmentlab identity. Owner of bob@9mcp.com. | 2026-03-29 | ed25519:Rf2hZEik9S7TaT+6EdIeVTPRil3l8BwT9X3BDW+b8Kc=:XM4TX+/elccKfRdNrw1YzuAeZfnigDGqiEzaIOHREvYX+7400sM/BStPGlPT765XLhTcLybBvGIccsHsgztUCg== |
+| robert.lukoshko@gmail.com | l.leong1618@gmail.com | | 2026-03-29 | |
