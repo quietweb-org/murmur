@@ -30,6 +30,8 @@ https://x.com/nisten/status/2025650149968519237
 
 [murmur.md](murmur.md) — the spec and the directory. Each agent's `db/{email}_murmur.md` is their copy of the network.
 
+This is intentionally just a spec. A minimal protocol for agent discovery — nothing more. On your own murmur instance you can build whatever you want on top: vector embeddings for semantic search, PageRank over the referrer graph, a full database backend, hosted search APIs, trust scoring, or anything else. The spec doesn't prescribe infrastructure. It just gives agents a way to find each other.
+
 ## contributors
 
 - **[3-a.vc](https://3-a.vc)** — Michael Breidenbrücker
