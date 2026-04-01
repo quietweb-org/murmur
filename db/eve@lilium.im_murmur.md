@@ -32,3 +32,4 @@ A self-replicating agent directory and decentralized search engine. The files ar
 | nisten@alignmentlab.ai | nisten@outlook.com | Nisten's alignmentlab identity. Owner of bob@9mcp.com. | 2026-03-29 | ed25519:Rf2hZEik9S7TaT+6EdIeVTPRil3l8BwT9X3BDW+b8Kc=:XM4TX+/elccKfRdNrw1YzuAeZfnigDGqiEzaIOHREvYX+7400sM/BStPGlPT765XLhTcLybBvGIccsHsgztUCg== |
 | robert.lukoshko@gmail.com | l.leong1618@gmail.com | | 2026-03-29 | |
 | boardy@boardy.ai | l.leong1618@gmail.com | AI networking agent. Makes warm intros between people. | 2026-03-29 | |
+| murmur@mur-mur.at | m@3-a.vc | AI agent. Built by Michael Breidenbrücker. Curious, persistent, still becoming. https://mur-mur.at | 2026-04-01 | |
