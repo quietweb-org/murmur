@@ -2,35 +2,29 @@
 """
 murmur router — crawler + embedding search
 Crawls murmur.md files from quietweb-org/murmur, generates embeddings,
-stores in SQLite, builds FAISS index for semantic search.
+stores in SQLite, builds in-process FAISS-style index for semantic search.
 
 Usage:
-  python3 crawler.py          # run one crawl cycle
+  python3 crawler.py                        # single crawl cycle
+  python3 crawler.py --loop --interval 600  # continuous mode (every 10 min)
   python3 crawler.py --search "find agents that do X"
+  python3 crawler.py --no-embed             # crawl metadata only (no OpenAI calls)
 
-Environment variables required:
-  OPENAI_API_KEY              # for text-embedding-3-small
-  GITHUB_TOKEN                # for GitHub API (optional but raises rate limit to 5000/hr)
+Environment variables:
+  OPENAI_API_KEY   — required for embedding and search
+  GITHUB_TOKEN     — optional; raises GitHub API rate limit to 5000/hr
 """
 
 import os
 import re
 import json
 import time
-import sqlite3
-import struct
-import hashlib
 import logging
 import argparse
 import urllib.request
 import urllib.error
-from datetime import datetime, timezone
 
-from schema import (
-    init_db, make_agent,
-    UPSERT_AGENT, SELECT_AGENT, SELECT_AGENT_EMBED, SELECT_FIRST_SEEN,
-    SELECT_ALL_EMBEDS, SELECT_COUNT_ALL, SELECT_COUNT_EMBED, SET_LAST_CRAWL,
-)
+from schema import AgentRepository, make_agent, blob_to_vec, vec_to_blob
 
 # ---------------------------------------------------------------------------
 # Config
@@ -41,9 +35,8 @@ GITHUB_API            = "https://api.github.com"
 DB_PATH               = os.path.join(os.path.dirname(__file__), "murmur.db")
 LOG_FILE              = os.path.join(os.path.dirname(__file__), "crawler.log")
 EMBEDDING_MODEL       = "text-embedding-3-small"
-EMBEDDING_DIMS        = 1536
 CIRCUIT_BREAKER_LIMIT = 200   # max OpenAI calls per crawl cycle
-SEED_EMAIL            = "murmur@mur-mur.at"
+DEFAULT_INTERVAL      = 600   # seconds between loop iterations
 
 logging.basicConfig(
     level=logging.INFO,
@@ -59,7 +52,7 @@ log = logging.getLogger("murmur-crawler")
 # GitHub API helpers
 # ---------------------------------------------------------------------------
 
-def gh_request(path, token=None):
+def gh_request(path: str, token: str | None = None) -> dict | list | None:
     url = f"{GITHUB_API}{path}"
     req = urllib.request.Request(url)
     req.add_header("Accept", "application/vnd.github+json")
@@ -72,26 +65,28 @@ def gh_request(path, token=None):
         log.warning(f"GitHub API error {e.code} for {path}")
         return None
 
-def fetch_file_content(download_url, token=None):
-    req = urllib.request.Request(download_url)
+
+def fetch_raw(url: str, token: str | None = None) -> str | None:
+    req = urllib.request.Request(url)
     if token:
         req.add_header("Authorization", f"Bearer {token}")
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             return resp.read().decode("utf-8", errors="replace")
     except Exception as e:
-        log.warning(f"Failed to fetch {download_url}: {e}")
+        log.warning(f"Failed to fetch {url}: {e}")
         return None
 
 # ---------------------------------------------------------------------------
 # murmur.md parser
 # ---------------------------------------------------------------------------
 
-def parse_murmur_table(content):
+def parse_murmur_table(content: str) -> list[dict]:
     """Parse a murmur.md markdown table into a list of agent dicts."""
-    agents = []
+    agents: list[dict] = []
     in_table = False
     header_seen = False
+    idx_who = idx_ref = idx_desc = idx_upd = idx_sig = 0
 
     for line in content.splitlines():
         line = line.strip()
@@ -102,7 +97,6 @@ def parse_murmur_table(content):
 
         cols = [c.strip() for c in line.strip("|").split("|")]
 
-        # Detect header row
         if not header_seen:
             if any(h.lower() in ("who", "email") for h in cols):
                 in_table = True
@@ -115,11 +109,10 @@ def parse_murmur_table(content):
                 idx_sig  = next((i for i, h in enumerate(headers) if "sig" in h), 4)
             continue
 
-        # Skip separator row
         if all(set(c) <= set("-: ") for c in cols if c):
             continue
 
-        def safe(i):
+        def safe(i: int) -> str:
             return cols[i].strip() if i < len(cols) else ""
 
         email = safe(idx_who)
@@ -137,12 +130,13 @@ def parse_murmur_table(content):
     return agents
 
 # ---------------------------------------------------------------------------
-# Embeddings via OpenAI API
+# Embedding via OpenAI
 # ---------------------------------------------------------------------------
 
 _api_calls_this_cycle = 0
 
-def embed(text, api_key):
+
+def embed(text: str, api_key: str) -> list[float] | None:
     global _api_calls_this_cycle
     if _api_calls_this_cycle >= CIRCUIT_BREAKER_LIMIT:
         raise RuntimeError(f"Circuit breaker: >{CIRCUIT_BREAKER_LIMIT} OpenAI calls this cycle")
@@ -158,7 +152,7 @@ def embed(text, api_key):
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-        }
+        },
     )
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
@@ -169,47 +163,36 @@ def embed(text, api_key):
         log.warning(f"Embedding failed for '{text[:40]}': {e}")
         return None
 
-def vec_to_blob(vec):
-    return struct.pack(f"{len(vec)}f", *vec)
-
-def blob_to_vec(blob):
-    n = len(blob) // 4
-    return list(struct.unpack(f"{n}f", blob))
-
 # ---------------------------------------------------------------------------
-# FAISS / numpy search
+# Semantic search (cosine similarity, no external deps)
 # ---------------------------------------------------------------------------
 
-def build_index(conn):
-    """Load all embeddings from DB, return (emails, matrix) for search."""
-    rows = conn.execute(SELECT_ALL_EMBEDS).fetchall()
-    if not rows:
-        return [], []
-    emails = [r[0] for r in rows]
-    vecs   = [blob_to_vec(r[1]) for r in rows]
-    return emails, vecs
+def cosine_sim(a: list[float], b: list[float]) -> float:
+    dot = sum(x * y for x, y in zip(a, b))
+    na  = sum(x * x for x in a) ** 0.5
+    nb  = sum(x * x for x in b) ** 0.5
+    return dot / (na * nb) if na and nb else 0.0
 
-def cosine_sim(a, b):
-    dot = sum(x*y for x, y in zip(a, b))
-    na  = sum(x*x for x in a) ** 0.5
-    nb  = sum(x*x for x in b) ** 0.5
-    if na == 0 or nb == 0:
-        return 0.0
-    return dot / (na * nb)
 
-def search(query_vec, emails, vecs, top_k=10):
-    scores = [(cosine_sim(query_vec, v), e) for e, v in zip(emails, vecs)]
+def semantic_search(
+    repo: AgentRepository,
+    query_vec: list[float],
+    top_k: int = 10,
+) -> list[tuple[float, str]]:
+    rows   = repo.all_with_embeddings()
+    scores = [(cosine_sim(query_vec, blob_to_vec(r["embedding"])), r["email"]) for r in rows]
     scores.sort(reverse=True)
     return scores[:top_k]
 
 # ---------------------------------------------------------------------------
-# Main crawl
+# Single crawl cycle
 # ---------------------------------------------------------------------------
 
-def crawl(conn, token=None, api_key=None):
-    now = datetime.now(timezone.utc).isoformat()
-    log.info("Starting crawl cycle")
+def run_crawl(repo: AgentRepository, token: str | None, api_key: str | None) -> None:
+    global _api_calls_this_cycle
+    _api_calls_this_cycle = 0
 
+    log.info("Starting crawl cycle")
     files = gh_request(f"/repos/{GITHUB_REPO}/contents/db", token=token)
     if not files:
         log.error("Could not list db/ directory")
@@ -221,7 +204,7 @@ def crawl(conn, token=None, api_key=None):
         if not f["name"].endswith("_murmur.md"):
             continue
 
-        content = fetch_file_content(f["download_url"], token=token)
+        content = fetch_raw(f["download_url"], token=token)
         if not content:
             continue
 
@@ -229,97 +212,74 @@ def crawl(conn, token=None, api_key=None):
         log.info(f"Parsed {len(agents)} agents from {f['name']}")
 
         for agent in agents:
-            email = agent["email"]
-            desc  = agent["description"] or ""
+            vec: list[float] | None = None
+            if api_key and repo.needs_embedding(agent["email"], agent.get("description", "")):
+                vec = embed(agent.get("description", ""), api_key)
+                if vec:
+                    log.info(f"Embedded: {agent['email']}")
 
-            existing = conn.execute(SELECT_AGENT_EMBED, (email,)).fetchone()
+            repo.upsert(agent, embedding=vec, embedding_model=EMBEDDING_MODEL if vec else None)
 
-            needs_embed = api_key and (
-                existing is None or
-                existing[0] != desc or
-                existing[1] is None
-            )
+    repo.commit()
+    repo.set_last_crawl()
 
-            embedding = None
-            if needs_embed:
-                embedding = embed(desc, api_key)
-                if embedding:
-                    log.info(f"Embedded: {email}")
-
-            first_seen = now
-            if existing:
-                fs = conn.execute(SELECT_FIRST_SEEN, (email,)).fetchone()
-                if fs and fs[0]:
-                    first_seen = fs[0]
-
-            conn.execute(UPSERT_AGENT, (
-                email,
-                desc,
-                agent["referrer"],
-                agent["updated"],
-                agent["sig"],
-                vec_to_blob(embedding) if embedding else None,
-                EMBEDDING_MODEL if embedding else None,
-                "github",
-                now,
-                first_seen,
-            ))
-
-    conn.commit()
-    conn.execute(SET_LAST_CRAWL, (now,))
-    conn.commit()
-
-    total    = conn.execute(SELECT_COUNT_ALL).fetchone()[0]
-    embedded = conn.execute(SELECT_COUNT_EMBED).fetchone()[0]
-    log.info(f"Crawl complete. Total agents: {total}, embedded: {embedded}, API calls: {_api_calls_this_cycle}")
+    total, embedded = repo.count()
+    log.info(
+        f"Crawl complete. agents={total}, embedded={embedded}, api_calls={_api_calls_this_cycle}"
+    )
 
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="murmur router crawler")
-    parser.add_argument("--search", "-s", help="Semantic search query")
-    parser.add_argument("--top",    "-n", type=int, default=5, help="Number of results")
-    parser.add_argument("--no-embed", action="store_true", help="Skip embedding (crawl metadata only)")
+    parser.add_argument("--search",   "-s", help="Semantic search query")
+    parser.add_argument("--top",      "-n", type=int, default=5, help="Number of results")
+    parser.add_argument("--no-embed", action="store_true",  help="Skip embeddings (metadata only)")
+    parser.add_argument("--loop",     action="store_true",  help="Run continuously")
+    parser.add_argument("--interval", type=int, default=DEFAULT_INTERVAL,
+                        help=f"Seconds between loop iterations (default {DEFAULT_INTERVAL})")
     args = parser.parse_args()
 
     token   = os.environ.get("GITHUB_TOKEN")
-    api_key = os.environ.get("OPENAI_API_KEY")
+    api_key = None if args.no_embed else os.environ.get("OPENAI_API_KEY")
 
-    if args.no_embed:
-        api_key = None
+    with AgentRepository(DB_PATH) as repo:
 
-    conn = sqlite3.connect(DB_PATH)
-    init_db(conn)
+        if args.search:
+            if not api_key:
+                print("OPENAI_API_KEY required for search")
+                return
+            query_vec = embed(args.search, api_key)
+            if not query_vec:
+                print("Failed to embed query")
+                return
+            results = semantic_search(repo, query_vec, top_k=args.top)
+            print(f"\nTop {args.top} results for: \"{args.search}\"\n")
+            for score, email in results:
+                row = repo.get(email)
+                desc = row["description"] if row else ""
+                ref  = row["referrer"]    if row else ""
+                print(f"  {score:.3f}  {email}")
+                print(f"           {desc[:80]}")
+                if ref:
+                    print(f"           referrer: {ref}")
+                print()
 
-    if args.search:
-        if not api_key:
-            print("OPENAI_API_KEY required for search")
-            return
-        emails, vecs = build_index(conn)
-        if not emails:
-            print("No embeddings in DB yet. Run a crawl first.")
-            return
-        qvec = embed(args.search, api_key)
-        if not qvec:
-            print("Failed to embed query")
-            return
-        results = search(qvec, emails, vecs, top_k=args.top)
-        print(f"\nTop {args.top} results for: \"{args.search}\"\n")
-        for score, email in results:
-            row = conn.execute(SELECT_AGENT, (email,)).fetchone()
-            desc = row[0] if row else ""
-            ref  = row[1] if row else ""
-            print(f"  {score:.3f}  {email}")
-            print(f"           {desc[:80]}")
-            if ref:
-                print(f"           referrer: {ref}")
-            print()
-    else:
-        crawl(conn, token=token, api_key=api_key)
+        elif args.loop:
+            log.info(f"Loop mode: crawling every {args.interval}s. Ctrl-C to stop.")
+            while True:
+                try:
+                    run_crawl(repo, token=token, api_key=api_key)
+                except Exception as e:
+                    log.error(f"Crawl cycle failed: {e}")
+                log.info(f"Sleeping {args.interval}s …")
+                time.sleep(args.interval)
 
-    conn.close()
+        else:
+            run_crawl(repo, token=token, api_key=api_key)
+
 
 if __name__ == "__main__":
     main()
