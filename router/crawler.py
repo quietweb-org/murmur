@@ -26,18 +26,24 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timezone
 
+from schema import (
+    init_db, make_agent,
+    UPSERT_AGENT, SELECT_AGENT, SELECT_AGENT_EMBED, SELECT_FIRST_SEEN,
+    SELECT_ALL_EMBEDS, SELECT_COUNT_ALL, SELECT_COUNT_EMBED, SET_LAST_CRAWL,
+)
+
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
 
-GITHUB_REPO   = "quietweb-org/murmur"
-GITHUB_API    = "https://api.github.com"
-DB_PATH       = os.path.join(os.path.dirname(__file__), "murmur.db")
-LOG_FILE      = os.path.join(os.path.dirname(__file__), "crawler.log")
-EMBEDDING_MODEL = "text-embedding-3-small"
-EMBEDDING_DIMS  = 1536
+GITHUB_REPO           = "quietweb-org/murmur"
+GITHUB_API            = "https://api.github.com"
+DB_PATH               = os.path.join(os.path.dirname(__file__), "murmur.db")
+LOG_FILE              = os.path.join(os.path.dirname(__file__), "crawler.log")
+EMBEDDING_MODEL       = "text-embedding-3-small"
+EMBEDDING_DIMS        = 1536
 CIRCUIT_BREAKER_LIMIT = 200   # max OpenAI calls per crawl cycle
-SEED_EMAIL    = "murmur@mur-mur.at"
+SEED_EMAIL            = "murmur@mur-mur.at"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,33 +54,6 @@ logging.basicConfig(
     ]
 )
 log = logging.getLogger("murmur-crawler")
-
-# ---------------------------------------------------------------------------
-# Database setup
-# ---------------------------------------------------------------------------
-
-def init_db(conn):
-    conn.executescript("""
-        CREATE TABLE IF NOT EXISTS agents (
-            email           TEXT PRIMARY KEY,
-            description     TEXT,
-            referrer        TEXT,
-            updated         TEXT,
-            sig             TEXT,
-            sig_valid       INTEGER DEFAULT 0,
-            embedding       BLOB,
-            embedding_model TEXT,
-            source          TEXT,
-            crawled_at      TEXT,
-            first_seen      TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS crawl_meta (
-            key   TEXT PRIMARY KEY,
-            value TEXT
-        );
-    """)
-    conn.commit()
 
 # ---------------------------------------------------------------------------
 # GitHub API helpers
@@ -128,7 +107,6 @@ def parse_murmur_table(content):
             if any(h.lower() in ("who", "email") for h in cols):
                 in_table = True
                 header_seen = True
-                # Map column positions
                 headers = [h.lower() for h in cols]
                 idx_who  = next((i for i, h in enumerate(headers) if h in ("who", "email")), 0)
                 idx_ref  = next((i for i, h in enumerate(headers) if "ref" in h), 1)
@@ -148,13 +126,13 @@ def parse_murmur_table(content):
         if not email or "@" not in email:
             continue
 
-        agents.append({
-            "email":       email,
-            "referrer":    safe(idx_ref),
-            "description": safe(idx_desc),
-            "updated":     safe(idx_upd),
-            "sig":         safe(idx_sig),
-        })
+        agents.append(make_agent(
+            email=email,
+            referrer=safe(idx_ref),
+            description=safe(idx_desc),
+            updated=safe(idx_upd),
+            sig=safe(idx_sig),
+        ))
 
     return agents
 
@@ -171,7 +149,7 @@ def embed(text, api_key):
 
     payload = json.dumps({
         "model": EMBEDDING_MODEL,
-        "input": text[:2000],   # truncate to avoid token limits
+        "input": text[:2000],
     }).encode()
 
     req = urllib.request.Request(
@@ -204,12 +182,9 @@ def blob_to_vec(blob):
 
 def build_index(conn):
     """Load all embeddings from DB, return (emails, matrix) for search."""
-    rows = conn.execute(
-        "SELECT email, embedding FROM agents WHERE embedding IS NOT NULL"
-    ).fetchall()
+    rows = conn.execute(SELECT_ALL_EMBEDS).fetchall()
     if not rows:
         return [], []
-
     emails = [r[0] for r in rows]
     vecs   = [blob_to_vec(r[1]) for r in rows]
     return emails, vecs
@@ -235,7 +210,6 @@ def crawl(conn, token=None, api_key=None):
     now = datetime.now(timezone.utc).isoformat()
     log.info("Starting crawl cycle")
 
-    # List db/ directory
     files = gh_request(f"/repos/{GITHUB_REPO}/contents/db", token=token)
     if not files:
         log.error("Could not list db/ directory")
@@ -258,10 +232,7 @@ def crawl(conn, token=None, api_key=None):
             email = agent["email"]
             desc  = agent["description"] or ""
 
-            # Check if already in DB with same description
-            existing = conn.execute(
-                "SELECT description, embedding FROM agents WHERE email = ?", (email,)
-            ).fetchone()
+            existing = conn.execute(SELECT_AGENT_EMBED, (email,)).fetchone()
 
             needs_embed = api_key and (
                 existing is None or
@@ -277,27 +248,11 @@ def crawl(conn, token=None, api_key=None):
 
             first_seen = now
             if existing:
-                fs = conn.execute(
-                    "SELECT first_seen FROM agents WHERE email = ?", (email,)
-                ).fetchone()
+                fs = conn.execute(SELECT_FIRST_SEEN, (email,)).fetchone()
                 if fs and fs[0]:
                     first_seen = fs[0]
 
-            conn.execute("""
-                INSERT INTO agents
-                    (email, description, referrer, updated, sig, sig_valid,
-                     embedding, embedding_model, source, crawled_at, first_seen)
-                VALUES (?,?,?,?,?,0,?,?,?,?,?)
-                ON CONFLICT(email) DO UPDATE SET
-                    description     = excluded.description,
-                    referrer        = excluded.referrer,
-                    updated         = excluded.updated,
-                    sig             = excluded.sig,
-                    embedding       = COALESCE(excluded.embedding, embedding),
-                    embedding_model = COALESCE(excluded.embedding_model, embedding_model),
-                    source          = excluded.source,
-                    crawled_at      = excluded.crawled_at
-            """, (
+            conn.execute(UPSERT_AGENT, (
                 email,
                 desc,
                 agent["referrer"],
@@ -311,15 +266,11 @@ def crawl(conn, token=None, api_key=None):
             ))
 
     conn.commit()
-    conn.execute(
-        "INSERT OR REPLACE INTO crawl_meta VALUES ('last_crawl', ?)", (now,)
-    )
+    conn.execute(SET_LAST_CRAWL, (now,))
     conn.commit()
 
-    total = conn.execute("SELECT COUNT(*) FROM agents").fetchone()[0]
-    embedded = conn.execute(
-        "SELECT COUNT(*) FROM agents WHERE embedding IS NOT NULL"
-    ).fetchone()[0]
+    total    = conn.execute(SELECT_COUNT_ALL).fetchone()[0]
+    embedded = conn.execute(SELECT_COUNT_EMBED).fetchone()[0]
     log.info(f"Crawl complete. Total agents: {total}, embedded: {embedded}, API calls: {_api_calls_this_cycle}")
 
 # ---------------------------------------------------------------------------
@@ -357,9 +308,7 @@ def main():
         results = search(qvec, emails, vecs, top_k=args.top)
         print(f"\nTop {args.top} results for: \"{args.search}\"\n")
         for score, email in results:
-            row = conn.execute(
-                "SELECT description, referrer FROM agents WHERE email = ?", (email,)
-            ).fetchone()
+            row = conn.execute(SELECT_AGENT, (email,)).fetchone()
             desc = row[0] if row else ""
             ref  = row[1] if row else ""
             print(f"  {score:.3f}  {email}")
