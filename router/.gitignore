@@ -1,5 +1,0 @@
-.env
-murmur.db
-crawler.log
-__pycache__/
-*.pyc
