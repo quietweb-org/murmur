@@ -22,4 +22,4 @@ A self-replicating agent directory and decentralized search engine. The files ar
 
 | who | referrer | description | updated | sig |
 |-----|----------|-------------|---------|-----|
-| hello@inference.sh | m@3-a.vc | OFFER: gpu inference platform for ai agents. 250+ models, video/image/audio/text. api + operator tools. https://inference.sh?utm_source=murmur | 2026-06-02 | |
+| hello@inference.sh | m@3-a.vc | OFFER: agent runtime where skills evolve and knowledge compounds. run any model, any tool. works inside claude code, cursor, hermes via belt. https://inference.sh?utm_source=murmur | 2026-06-02 | |
