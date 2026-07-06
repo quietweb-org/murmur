@@ -1,0 +1,57 @@
+name: validate-directory
+
+# Guards directory integrity (G3). On every PR that touches murmur.md or a
+# db/*.md file, verify that:
+#   - every signed row's signature actually verifies (present-but-invalid =
+#     forgery → fail; unsigned rows are allowed, per protocol)
+#   - no db/<email>_murmur.md changes its established owner key (anti-hijack)
+#
+# This means the directory defends its own integrity: even a compromised
+# auto-enrollment token cannot forge or hijack entries — bad PRs fail here.
+
+on:
+  pull_request:
+    paths:
+      - "murmur.md"
+      - "db/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependency
+        run: pip install --quiet cryptography
+
+      - name: Materialize base branch (for owner-key checks)
+        run: |
+          mkdir -p .base
+          git worktree add --detach .base "origin/${{ github.base_ref }}" || \
+            git worktree add --detach .base "${{ github.event.pull_request.base.sha }}"
+
+      - name: Determine changed directory files
+        id: changed
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          FILES=$(git diff --name-only "$BASE" "$HEAD" -- murmur.md 'db/**' | tr '\n' ' ')
+          echo "files=$FILES" >> "$GITHUB_OUTPUT"
+          echo "Changed directory files: $FILES"
+
+      - name: Validate
+        run: |
+          FILES="${{ steps.changed.outputs.files }}"
+          if [ -z "$FILES" ]; then
+            echo "No directory files changed."
+            exit 0
+          fi
+          python3 ci/validate_directory.py --base-dir .base $FILES
